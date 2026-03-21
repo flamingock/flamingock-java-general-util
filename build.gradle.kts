@@ -49,10 +49,10 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components["java"])
-            artifactId = "general-util"
+            artifactId = "flamingock-general-util"
 
             pom {
-                name.set("general-util")
+                name.set("flamingock-general-util")
                 description.set("General-purpose utilities and helper classes shared across Flamingock modules")
                 url.set("https://flamingock.io")
 
