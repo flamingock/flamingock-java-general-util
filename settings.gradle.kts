@@ -1,1 +1,1 @@
-rootProject.name = "flamingock-general-util"
+rootProject.name = "flamingock-java-general-util"
