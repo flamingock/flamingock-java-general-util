@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public final class FileUtil {
@@ -38,8 +39,13 @@ public final class FileUtil {
 
 
     public static List<File> getAllYamlFiles(File directory) {
-        FilenameFilter fileNameFilter = (dir, name) -> name.endsWith(".yaml");
+        FilenameFilter fileNameFilter = (dir, name) -> isYamlFileName(name);
         return getAllFiles(directory, fileNameFilter);
+    }
+
+    private static boolean isYamlFileName(String fileName) {
+        String normalizedFileName = fileName.toLowerCase(Locale.ROOT);
+        return normalizedFileName.endsWith(".yaml") || normalizedFileName.endsWith(".yml");
     }
 
     public static List<File> getAllFiles(File directory, FilenameFilter filenameFilter) {
