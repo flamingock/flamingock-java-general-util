@@ -23,6 +23,9 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     implementation("org.slf4j:slf4j-api:2.0.6")
     compileOnly("org.jetbrains:annotations:24.0.0")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
 }
 
 description = "General-purpose utilities and helper classes shared across Flamingock modules"
