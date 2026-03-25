@@ -4,7 +4,16 @@
       "Bash(curl:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh api:*)",
-      "Bash(ls /Users/dieppa/workspace/flamingock/library/flamingock-java-general-util/LICENSE*)"
+      "Bash(ls /Users/dieppa/workspace/flamingock/library/flamingock-java-general-util/LICENSE*)",
+      "Bash(find /Users/dieppa/workspace/flamingock/library/flamingock-java-general-util -type f -name *.gradle -o -name pom.xml -o -name gradle.properties -o -name settings.gradle)",
+      "Bash(find /Users/dieppa/workspace/flamingock/library/flamingock-java-general-util -type f \\\\\\(-name .releaserc* -o -name release.json -o -name version.txt -o -name VERSION -o -name .github* \\\\\\))",
+      "Bash(./gradlew printVersion)",
+      "Bash(./gradlew printVersion -Prelease 2>&1)",
+      "Bash(./gradlew clean:*)",
+      "Bash(./gradlew printVersion -Prelease)",
+      "Bash(git check-ignore:*)",
+      "Bash(git -C /Users/dieppa/workspace/flamingock/library/flamingock-java-general-util check-ignore -v buildSrc/src/main/kotlin/io/flamingock/build/VersionManager.kt)",
+      "Bash(git:*)"
     ]
   }
 }
