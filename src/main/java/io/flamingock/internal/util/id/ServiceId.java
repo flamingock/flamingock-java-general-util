@@ -17,14 +17,14 @@ package io.flamingock.internal.util.id;
 
 import io.flamingock.internal.util.Property;
 
-public class ServiceId extends Id implements Property {
+public class ServiceId extends LongId implements Property {
     private final static String PROPERTY_KEY = "cloud.service.id";
 
-    public static ServiceId fromString(String value) {
+    public static ServiceId fromLong(long value) {
         return new ServiceId(value);
     }
 
-    private ServiceId(String value) {
+    private ServiceId(long value) {
         super(value);
     }
 

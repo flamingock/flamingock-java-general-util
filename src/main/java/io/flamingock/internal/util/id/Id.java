@@ -15,31 +15,30 @@
  */
 package io.flamingock.internal.util.id;
 
-public abstract class Id {
+import java.util.Objects;
 
-    private final String value;
+public abstract class Id<T> {
 
-    protected Id(String value) {
-        if(value == null || value.isEmpty()) {
+    protected final T value;
+
+    protected Id(T value) {
+        if(value == null) {
             String name = this.getClass().getSimpleName();
-            throw new RuntimeException(name + " cannot be null or empty");
+            throw new RuntimeException(name + " cannot be null");
         }
         this.value = value;
     }
 
     @Override
-    public String toString() {
-        return value;
-    }
+    abstract public String toString();
+
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Id that = (Id) o;
-
-        return value.equals(that.value);
+        Id<?> id = (Id<?>) o;
+        return Objects.equals(value, id.value);
     }
 
     @Override

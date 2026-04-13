@@ -15,28 +15,19 @@
  */
 package io.flamingock.internal.util.id;
 
-import io.flamingock.internal.util.Property;
+public abstract class StringId extends Id<String> {
 
-public class EnvironmentId extends LongId implements Property {
-
-    private final static String PROPERTY_KEY = "cloud.environment.id";
-
-    public static EnvironmentId fromLong(long value) {
-        return new EnvironmentId(value);
-    }
-
-    private EnvironmentId(long value) {
+    protected StringId(String value) {
         super(value);
+        if(this.value.isEmpty()) {
+            String name = this.getClass().getSimpleName();
+            throw new RuntimeException(name + " cannot be empty");
+        }
     }
 
     @Override
-    public boolean equals(Object o) {
-        return super.equals(o) && o instanceof EnvironmentId;
+    public String toString() {
+        return value;
     }
 
-
-    @Override
-    public String getKey() {
-        return PROPERTY_KEY;
-    }
 }

@@ -17,7 +17,7 @@ package io.flamingock.internal.util.id;
 
 import io.flamingock.internal.util.Property;
 
-public class JwtProperty extends Id implements Property {
+public class JwtProperty extends StringId implements Property {
 
     private final static String PROPERTY_KEY = "cloud.jwt";
 

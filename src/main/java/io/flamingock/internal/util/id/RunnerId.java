@@ -41,7 +41,7 @@ import java.util.UUID;
  *   <li>Persistence and log readability</li>
  * </ul>
  */
-public final class RunnerId extends Id implements Property {
+public final class RunnerId extends StringId implements Property {
 
     private static final Logger logger = LoggerFactory.getLogger(RunnerId.class);
     private static final String PROPERTY_KEY = "runner.id";
