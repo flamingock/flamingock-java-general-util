@@ -10,7 +10,7 @@ plugins {
 
 
 group = "io.flamingock"
-val declaredVersion = "1.5.2-SNAPSHOT"
+val declaredVersion = "1.5.3-SNAPSHOT"
 version = VersionManager.resolveVersion(declaredVersion, project.hasProperty("release"))
 
 repositories {
