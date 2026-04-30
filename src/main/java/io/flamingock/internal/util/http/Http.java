@@ -114,7 +114,7 @@ public final class Http {
         }
 
         public Request GET(String pathTemplate) {
-            return newRequest(Method.POST, pathTemplate);
+            return newRequest(Method.GET, pathTemplate);
         }
 
         public RequestWithBody PUT(String pathTemplate) {
