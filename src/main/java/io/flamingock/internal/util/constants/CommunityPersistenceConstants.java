@@ -20,6 +20,7 @@ public final class CommunityPersistenceConstants {
     public static final String DEFAULT_AUDIT_STORE_NAME = "flamingockAuditLog";
     public static final String DEFAULT_LOCK_STORE_NAME = "flamingockLock";
     public static final String DEFAULT_MARKER_STORE_NAME = "flamingockAuditMarker";
+    public static final String DEFAULT_JOURNAL_STORE_NAME = "flamingockJournalEvents";
 
     private CommunityPersistenceConstants() {
     }
