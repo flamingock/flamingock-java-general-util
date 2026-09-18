@@ -254,6 +254,7 @@ public final class Http {
                             error = mapResult(response.getEntity(), FlamingockError.class);
 
                         } catch (Throwable ex) {
+                            logger.warn("Failed to parse error body from[{}] as FlamingockError. Falling back to generic error.", request, ex);
                             error = new FlamingockError(GENERIC_ERROR, false, response.getEntity().toString());
                         }
 
