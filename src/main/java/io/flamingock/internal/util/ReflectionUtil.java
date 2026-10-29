@@ -459,6 +459,60 @@ public final class ReflectionUtil {
     }
 
     /**
+     * Resolves a method by its parameter type names, optionally searching the superclass hierarchy.
+     * With hierarchy search enabled, searches the target class first, then its ancestors
+     * up to but excluding {@link Object}.
+     * An exact signature takes precedence over unrelated overloads at any level.
+     * Parameter names may use canonical names (including source-style arrays) or binary names.
+     *
+     * <p>If hierarchy search is disabled or no exact signature matches, uses declared methods
+     * on the target class only: returns the sole method with that name, otherwise the sole
+     * method with the requested parameter count, otherwise resolves types for an exact match.
+     * Interfaces are not traversed.
+     *
+     * @param targetClass the class where the search starts
+     * @param methodName the name of the method
+     * @param parameterTypeNames the ordered parameter type names; null means no parameters
+     * @param searchHierarchy true to prioritize exact signatures across superclasses;
+     *                        false to use only the declared-method heuristic
+     * @return the nearest exact match when enabled, or the declared-method fallback
+     * @throws RuntimeException if the fallback cannot resolve the method or the target/name is invalid
+     */
+    public static Method getMethodFromParameterTypeNames(
+            Class<?> targetClass,
+            String methodName,
+            List<String> parameterTypeNames,
+            boolean searchHierarchy) {
+        if (!searchHierarchy) {
+            return resolveDeclaredMethod(targetClass, methodName, parameterTypeNames);
+        }
+        List<String> names = parameterTypeNames == null ? Collections.emptyList() : parameterTypeNames;
+        for (Class<?> candidate = targetClass; candidate != null && candidate != Object.class;
+             candidate = candidate.getSuperclass()) {
+            for (Method method : candidate.getDeclaredMethods()) {
+                if (method.getName().equals(methodName) && matchesParameterTypeNames(method, names)) {
+                    return method;
+                }
+            }
+        }
+        return resolveDeclaredMethod(targetClass, methodName, parameterTypeNames);
+    }
+
+    private static boolean matchesParameterTypeNames(Method method, List<String> names) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length != names.size()) {
+            return false;
+        }
+        for (int i = 0; i < parameterTypes.length; i++) {
+            if (!names.get(i).equals(parameterTypes[i].getCanonicalName())
+                    && !names.get(i).equals(parameterTypes[i].getName())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Finds a declared method by name using your 3-step heuristic:
      *  1) Filter declared methods by name.
      *     - If exactly one remains, return it.
@@ -469,7 +523,7 @@ public final class ReflectionUtil {
      * Notes:
      *  - Only declared methods are considered (no inheritance).
      */
-    public static Method getDeclaredMethodFromParameterTypeNames(
+    private static Method resolveDeclaredMethod(
             Class<?> targetClass,
             String methodName,
             List<String> parameterTypeNames) {
