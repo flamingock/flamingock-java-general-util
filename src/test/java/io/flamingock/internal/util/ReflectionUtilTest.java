@@ -30,20 +30,20 @@ class ReflectionUtilTest {
     @Test
     void shouldInvokeInheritedMethodThroughMultipleLevels() throws Exception {
         Method method = ReflectionUtil.getMethodFromParameterTypeNames(
-                Leaf.class, "apply", Collections.singletonList("java.lang.String"), true);
+                PlainLeaf.class, "apply", Collections.singletonList("java.lang.String"), true);
 
         assertEquals(Base.class, method.getDeclaringClass());
-        assertEquals("base:value", method.invoke(new Leaf(), "value"));
+        assertEquals("base:value", method.invoke(new PlainLeaf(), "value"));
     }
 
     @Test
-    void shouldSelectInheritedSignaturePastConcreteAndIntermediateOverloads() throws Exception {
+    void shouldUseNearestClassNameHeuristicBeforeSearchingAncestors() throws Exception {
         for (Class<?> source : Arrays.asList(Overloaded.class, Leaf.class)) {
             Method method = ReflectionUtil.getMethodFromParameterTypeNames(
                     source, "apply", Collections.singletonList("java.lang.String"), true);
 
-            assertEquals(Base.class, method.getDeclaringClass());
-            assertEquals("base:value", method.invoke(source.newInstance(), "value"));
+            assertEquals(Overloaded.class, method.getDeclaringClass());
+            assertEquals("integer:7", method.invoke(source.newInstance(), 7));
         }
     }
 
@@ -123,6 +123,36 @@ class ReflectionUtilTest {
 
         assertEquals("No declared method named 'apply' found in " + Leaf.class.getName(), error.getMessage());
     }
+
+    @Test
+    void shouldSearchAncestorsWhenDeclaredOverloadsCannotResolve() throws Exception {
+        for (List<String> names : Arrays.asList(Collections.<String>emptyList(),
+                Collections.singletonList("java.lang.String"))) {
+            Method method = ReflectionUtil.getMethodFromParameterTypeNames(
+                    UnmatchedOverloads.class, "apply", names, true);
+
+            assertEquals(Base.class, method.getDeclaringClass());
+            assertEquals("base:value", method.invoke(new UnmatchedOverloads(), "value"));
+        }
+    }
+
+    @Test
+    void shouldPropagateInvalidParameterTypeInsteadOfSearchingAncestors() {
+        RuntimeException error = assertThrows(RuntimeException.class,
+                () -> ReflectionUtil.getMethodFromParameterTypeNames(
+                        UnmatchedOverloads.class, "apply", Collections.singletonList("missing.Type"), true));
+
+        assertEquals("Class not found for parameter type name: missing.Type", error.getMessage());
+    }
+
+    public static class UnmatchedOverloads extends Base {
+        public String apply(Integer value) { return "integer:" + value; }
+        public String apply(Long value) { return "long:" + value; }
+    }
+
+    public static class PlainIntermediate extends Base { }
+
+    public static class PlainLeaf extends PlainIntermediate { }
 
     public static class DeclaredOverloads {
         public String apply() { return "empty"; }

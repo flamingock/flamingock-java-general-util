@@ -462,54 +462,53 @@ public final class ReflectionUtil {
      * Resolves a method by its parameter type names, optionally searching the superclass hierarchy.
      * With hierarchy search enabled, searches the target class first, then its ancestors
      * up to but excluding {@link Object}.
-     * An exact signature takes precedence over unrelated overloads at any level.
-     * Parameter names may use canonical names (including source-style arrays) or binary names.
+     * At each level, uses the declared-method heuristic: returns the sole method with that
+     * name, otherwise the sole method with the requested parameter count, otherwise resolves
+     * types for an exact match. A successful resolution takes precedence over any ancestor,
+     * even when the name or parameter-count shortcut does not match the requested types.
      *
-     * <p>If hierarchy search is disabled or no exact signature matches, uses declared methods
-     * on the target class only: returns the sole method with that name, otherwise the sole
-     * method with the requested parameter count, otherwise resolves types for an exact match.
+     * <p>Only an unresolved method triggers a search in the next superclass.
+     * Invalid arguments and parameter type loading errors propagate immediately.
+     * If hierarchy search is disabled, only the target class is considered.
      * Interfaces are not traversed.
      *
      * @param targetClass the class where the search starts
      * @param methodName the name of the method
      * @param parameterTypeNames the ordered parameter type names; null means no parameters
-     * @param searchHierarchy true to prioritize exact signatures across superclasses;
-     *                        false to use only the declared-method heuristic
-     * @return the nearest exact match when enabled, or the declared-method fallback
-     * @throws RuntimeException if the fallback cannot resolve the method or the target/name is invalid
+     * @param searchHierarchy true to apply the declared-method heuristic to successive superclasses;
+     *                        false to search only the target class
+     * @return the first method resolved by the declared-method heuristic
+     * @throws RuntimeException if no method can be resolved or the arguments or parameter types are invalid
      */
     public static Method getMethodFromParameterTypeNames(
             Class<?> targetClass,
             String methodName,
             List<String> parameterTypeNames,
             boolean searchHierarchy) {
-        if (!searchHierarchy) {
+        try {
             return resolveDeclaredMethod(targetClass, methodName, parameterTypeNames);
-        }
-        List<String> names = parameterTypeNames == null ? Collections.emptyList() : parameterTypeNames;
-        for (Class<?> candidate = targetClass; candidate != null && candidate != Object.class;
-             candidate = candidate.getSuperclass()) {
-            for (Method method : candidate.getDeclaredMethods()) {
-                if (method.getName().equals(methodName) && matchesParameterTypeNames(method, names)) {
-                    return method;
+        } catch (MethodResolutionNotFoundException notFound) {
+            Class<?> superclass = targetClass.getSuperclass();
+            if (searchHierarchy && superclass != null && superclass != Object.class) {
+                try {
+                    return getMethodFromParameterTypeNames(superclass, methodName, parameterTypeNames, true);
+                } catch (MethodResolutionNotFoundException ancestorNotFound) {
+                    // Preserve the diagnostic for the class where the lookup started.
+                    throw notFound;
                 }
             }
+            throw notFound;
         }
-        return resolveDeclaredMethod(targetClass, methodName, parameterTypeNames);
     }
 
-    private static boolean matchesParameterTypeNames(Method method, List<String> names) {
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length != names.size()) {
-            return false;
+    private static final class MethodResolutionNotFoundException extends RuntimeException {
+        private MethodResolutionNotFoundException(String message) {
+            super(message);
         }
-        for (int i = 0; i < parameterTypes.length; i++) {
-            if (!names.get(i).equals(parameterTypes[i].getCanonicalName())
-                    && !names.get(i).equals(parameterTypes[i].getName())) {
-                return false;
-            }
+
+        private MethodResolutionNotFoundException(String message, Throwable cause) {
+            super(message, cause);
         }
-        return true;
     }
 
     /**
@@ -541,7 +540,7 @@ public final class ReflectionUtil {
                 .collect(Collectors.toList());
 
         if (sameName.isEmpty()) {
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' found in " + targetClass.getName());
         }
         else if (sameName.size() == 1) {
@@ -555,7 +554,7 @@ public final class ReflectionUtil {
                 .collect(Collectors.toList());
 
         if (sameArity.isEmpty()) {
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' with parameter count = " + paramCount
                     + " found in " + targetClass.getName());
         }
@@ -570,7 +569,7 @@ public final class ReflectionUtil {
             return targetClass.getDeclaredMethod(methodName, exactTypes);
         } catch (NoSuchMethodException e) {
             String sig = "(" + Arrays.stream(exactTypes).map(Class::getTypeName).collect(Collectors.joining(", ")) + ")";
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' exactly matching parameter types " + sig
                     + " in " + targetClass.getName(), e);
         }
