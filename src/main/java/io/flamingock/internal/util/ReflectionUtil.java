@@ -459,6 +459,59 @@ public final class ReflectionUtil {
     }
 
     /**
+     * Resolves a method by its parameter type names, optionally searching the superclass hierarchy.
+     * With hierarchy search enabled, searches the target class first, then its ancestors
+     * up to but excluding {@link Object}.
+     * At each level, uses the declared-method heuristic: returns the sole method with that
+     * name, otherwise the sole method with the requested parameter count, otherwise resolves
+     * types for an exact match. A successful resolution takes precedence over any ancestor,
+     * even when the name or parameter-count shortcut does not match the requested types.
+     *
+     * <p>Only an unresolved method triggers a search in the next superclass.
+     * Invalid arguments and parameter type loading errors propagate immediately.
+     * If hierarchy search is disabled, only the target class is considered.
+     * Interfaces are not traversed.
+     *
+     * @param targetClass the class where the search starts
+     * @param methodName the name of the method
+     * @param parameterTypeNames the ordered parameter type names; null means no parameters
+     * @param searchHierarchy true to apply the declared-method heuristic to successive superclasses;
+     *                        false to search only the target class
+     * @return the first method resolved by the declared-method heuristic
+     * @throws RuntimeException if no method can be resolved or the arguments or parameter types are invalid
+     */
+    public static Method getMethodFromParameterTypeNames(
+            Class<?> targetClass,
+            String methodName,
+            List<String> parameterTypeNames,
+            boolean searchHierarchy) {
+        try {
+            return resolveDeclaredMethod(targetClass, methodName, parameterTypeNames);
+        } catch (MethodResolutionNotFoundException notFound) {
+            Class<?> superclass = targetClass.getSuperclass();
+            if (searchHierarchy && superclass != null && superclass != Object.class) {
+                try {
+                    return getMethodFromParameterTypeNames(superclass, methodName, parameterTypeNames, true);
+                } catch (MethodResolutionNotFoundException ancestorNotFound) {
+                    // Preserve the diagnostic for the class where the lookup started.
+                    throw notFound;
+                }
+            }
+            throw notFound;
+        }
+    }
+
+    private static final class MethodResolutionNotFoundException extends RuntimeException {
+        private MethodResolutionNotFoundException(String message) {
+            super(message);
+        }
+
+        private MethodResolutionNotFoundException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
      * Finds a declared method by name using your 3-step heuristic:
      *  1) Filter declared methods by name.
      *     - If exactly one remains, return it.
@@ -469,7 +522,7 @@ public final class ReflectionUtil {
      * Notes:
      *  - Only declared methods are considered (no inheritance).
      */
-    public static Method getDeclaredMethodFromParameterTypeNames(
+    private static Method resolveDeclaredMethod(
             Class<?> targetClass,
             String methodName,
             List<String> parameterTypeNames) {
@@ -487,7 +540,7 @@ public final class ReflectionUtil {
                 .collect(Collectors.toList());
 
         if (sameName.isEmpty()) {
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' found in " + targetClass.getName());
         }
         else if (sameName.size() == 1) {
@@ -501,7 +554,7 @@ public final class ReflectionUtil {
                 .collect(Collectors.toList());
 
         if (sameArity.isEmpty()) {
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' with parameter count = " + paramCount
                     + " found in " + targetClass.getName());
         }
@@ -516,7 +569,7 @@ public final class ReflectionUtil {
             return targetClass.getDeclaredMethod(methodName, exactTypes);
         } catch (NoSuchMethodException e) {
             String sig = "(" + Arrays.stream(exactTypes).map(Class::getTypeName).collect(Collectors.joining(", ")) + ")";
-            throw new RuntimeException("No declared method named '" + methodName
+            throw new MethodResolutionNotFoundException("No declared method named '" + methodName
                     + "' exactly matching parameter types " + sig
                     + " in " + targetClass.getName(), e);
         }
